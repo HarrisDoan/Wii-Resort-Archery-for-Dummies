@@ -22,24 +22,32 @@ const {
   Scene,
 } = tiny;
 
+//const {Textured_Phong} = defs
+
 export class Archery extends Scene {
   constructor() {
     super();
 
     // start toggle
     this.startgame = false;
-    // pause toggle
-    this.pause = false;
-    //Is the arrow launched?
+    // Is the arrow launched?
     this.launched = false;
-    //Launch angle
+    // Did the arrow hit the target?
+    this.hit = false;
+    // Did the arrow hit the grass?
+    this.miss = false;
+    // Launch angle
     this.theta = Math.PI / 8;
-    //Initial Velocity
+    // Initial Velocity
     this.velocity = 20;
-    //Gravity's acceleration
+    // Gravity's acceleration
     this.gravity = -9.81;
-    //Time launched
+    // Time launched
     this.launchtime = 0;
+    // Time arrow collides with something
+    this.hittime = 0;
+    // Scoring
+    this.score = 0;
 
     this.targetMoving = 0;
     this.targetPosition = [0, 0, 30];
@@ -54,6 +62,11 @@ export class Archery extends Scene {
     this.arrow_init_x = 0;
     this.arrow_init_y = -3;
     this.arrow_init_z = 4.25;
+
+    //Initialize Arrow Scalings
+    this.arrow_scale_x = 0.075;
+    this.arrow_scale_y = 0.075;
+    this.arrow_scale_z = 1.5;
 
     this.tangentAngle = this.theta;
 
@@ -108,12 +121,15 @@ export class Archery extends Scene {
         [0, 100],
       ]),
 
+      meter: new defs.Square(),
+
       //arrow_tip: new defs.Tetrahedron(true),
 
       plane: new defs.Square(),
       background: new defs.Cube(),
       tree: new defs.Cube(),
       leaves: new defs.Subdivision_Sphere(4),
+      score: new defs.Square(),
     };
 
     // Materials
@@ -130,25 +146,26 @@ export class Archery extends Scene {
         color: hex_color('#FFFFFF'),
         specularity: 0,
       }),
-      grass: new Material(new defs.Phong_Shader(), {
-        ambient: 0.5,
+      grass: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#29a929'),
+        ambient: 0.4,
         diffusivity: 0.5,
-        color: hex_color('#10FF10'),
-        specularity: 1,
+        specularity: 0.1,
+        texture: new Texture('assets/grass.jpg'),
       }),
       bullseye: new Material(new defs.Phong_Shader(), {
-        ambient: 1,
-        diffusivity: 0,
+        ambient: 0.5,
+        diffusivity: 0.5,
         color: hex_color('#FF0000'),
       }),
       middleRing: new Material(new defs.Phong_Shader(), {
-        ambient: 1,
-        diffusivity: 0,
+        ambient: 0.5,
+        diffusivity: 0.5,
         color: hex_color('#efd527'),
       }),
       outerRing: new Material(new defs.Phong_Shader(), {
-        ambient: 1,
-        diffusivity: 0,
+        ambient: 0.5,
+        diffusivity: 0.5,
         color: hex_color('#1d6fe7'),
       }),
 
@@ -159,11 +176,11 @@ export class Archery extends Scene {
         specularity: 0,
       }),
 
-      tip: new Material(new defs.Phong_Shader(), {
-          ambient: 0.7,
-          diffusivity: 0.2,
-          color: hex_color('#8a8282'),
-          specularity: 0,
+      meter: new Material(new defs.Phong_Shader(), {
+        ambient: 1,
+        diffusivity: 0.5,
+        color: hex_color('#fde137'),
+        specularity: 0.1,
       }),
 
       axis: new Material(new defs.Phong_Shader(), {
@@ -173,22 +190,110 @@ export class Archery extends Scene {
         specularity: 0,
       }),
       sky: new Material(new defs.Phong_Shader(), {
-        ambient: 1,
-        diffusivity: 1,
         color: hex_color('#87CEEB'),
-      }),
-
-      wood: new Material(new defs.Phong_Shader(), {
         ambient: 1,
         diffusivity: 1,
-        color: hex_color('#654321'),
+        //   texture: new Texture("assets/cloud.jpg"),     Messing with texturing the sky lol, can remove
+      }),
+      sky_white: new Material(new defs.Phong_Shader(), {
+        color: hex_color('#F0F0F0'),
+        ambient: 1,
+        diffusivity: 1,
+        //   texture: new Texture("assets/cloud.jpg"),     Messing with texturing the sky lol, can remove
       }),
 
-      leaves: new Material(new defs.Phong_Shader(), {
-        ambient: 0.5,
+      wood: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#654321'),
+        ambient: 0.4,
         diffusivity: 0.5,
+        specularity: 0.1,
+        texture: new Texture('assets/wood.jpg'),
+      }),
+
+      leaves: new Material(new defs.Textured_Phong(), {
         color: hex_color('#10FF10'),
         specularity: 1,
+        ambient: 0.5,
+        diffusivity: 0.5,
+        texture: new Texture('assets/leaves.jpg'), // Tryna mess with leaves textures LOL, can remove
+      }),
+
+      score_0: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_0.png'),
+      }),
+      score_1: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_1.png'),
+      }),
+      score_2: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_2.png'),
+      }),
+      score_3: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_3.png'),
+      }),
+      score_4: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_4.png'),
+      }),
+      score_5: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_5.png'),
+      }),
+      score_6: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_6.png'),
+      }),
+      score_7: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_7.png'),
+      }),
+      score_8: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_8.png'),
+      }),
+      score_9: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/score_9.png'),
+      }),
+      title: new Material(new defs.Textured_Phong(), {
+        color: hex_color('#000000'),
+        specularity: 0.1,
+        ambient: 1,
+        diffusivity: 0.5,
+        texture: new Texture('assets/Title_Screen.png'),
       }),
     };
 
@@ -202,38 +307,43 @@ export class Archery extends Scene {
   make_control_panel() {
     // Start Control
     this.key_triggered_button('Start Game!', ['Enter'], () => {
-      this.startgame =
-        !this.startgame &&
-        this.game_music.play() &&
-        this.background_sound.play();
-    });
-    this.key_triggered_button('Pause Game!', ['Escape'], () => {
-      this.pause =
-        !this.pause && this.game_music.pause() && this.background_sound.pause();
+      if (this.startgame == false) {
+        this.startgame =
+          !this.startgame &&
+          this.game_music.play() &&
+          this.background_sound.play();
+      }
     });
 
     //Player Control
-    this.key_triggered_button('Draw Bow Back', ['b'], () => {
+    this.key_triggered_button('Release/Reset Arrow', ['b'], () => {
+      if (this.launched) this.velocity = 20;
+
       this.launched = !this.launched;
     }); // Fill in Draw Bow Function
+
+    this.key_triggered_button('Draw Back', ['v'], () => {
+      if (this.launched == false) {
+        if (this.velocity < 50) this.velocity++;
+        else if (this.velocity >= 50) this.velocity = 15;
+      }
+    });
 
     this.key_triggered_button('Moving Target', ['n'], () => {
       if (this.targetMoving != 0) this.targetMoving = 0;
       else this.targetMoving = 1;
     });
 
-    this.key_triggered_button('Angle Up', ['i'], () => {
-      if (this.theta < Math.PI / 2 && !this.launched)
+    this.key_triggered_button('Angle Up', ['g'], () => {
+      if (this.theta < Math.PI / 2.5 && !this.launched)
         this.theta = this.theta + Math.PI / 16;
     });
 
-    this.key_triggered_button('Angle Down', ['k'], () => {
-      if (this.theta > Math.PI / 8 && !this.launched)
+    this.key_triggered_button('Angle Down', ['h'], () => {
+      if (this.theta > 0 && !this.launched)
         this.theta = this.theta - Math.PI / 16;
     });
 
-    //
-    //
     // // Extra Controls
     // this.key_triggered_button("Move Camera Left", ["Left Arrow"], () => this.attached = () => this.left_view);
     // this.new_line();
@@ -250,32 +360,28 @@ export class Archery extends Scene {
 
     if (this.targetMoving != 0) {
       if (this.targetMoving == 1) {
-        this.targetPosition[2] = this.targetPosition[2] + 0.125;
+        this.targetPosition[2] = this.targetPosition[2] + 0.15;
 
         if (this.targetPosition[2] > 50) this.targetMoving = 2;
       }
 
       if (this.targetMoving == 2) {
-        this.targetPosition[2] = this.targetPosition[2] - 0.125;
+        this.targetPosition[2] = this.targetPosition[2] - 0.15;
 
-        if (this.targetPosition[2] < 20) this.targetMoving = 1;
+        if (this.targetPosition[2] < 15) this.targetMoving = 1;
       }
     } else {
       this.targetPosition[2] = 30;
     }
 
-<<<<<<< HEAD
-    target_transform = target_transform.times(Mat4.translation(this.targetPosition[0], this.targetPosition[1], this.targetPosition[2]));
-    //.times(Mat4.rotation(90, 0,0,0));
-=======
     target_transform = target_transform.times(
       Mat4.translation(
         this.targetPosition[0],
         this.targetPosition[1],
         this.targetPosition[2]
       )
-    ); //.times(Mat4.rotation(90, 0,0,0));
->>>>>>> 5cf10e956a24a805f44d0cd0755131d0817ba88b
+    );
+
     this.shapes.bullseye.draw(
       context,
       program_state,
@@ -296,599 +402,441 @@ export class Archery extends Scene {
     );
   }
 
-  draw_leaves(context, program_state, model_transform) {
+  draw_tree(context, program_state, x, y, z) {
+    // draw trunk
+    let tree_transform = Mat4.identity();
+    tree_transform = tree_transform
+      .times(Mat4.scale(1, -4.5, 1))
+      .times(Mat4.translation(x, y, z));
+    this.shapes.tree.draw(
+      context,
+      program_state,
+      tree_transform,
+      this.materials.wood
+    );
+
+    // draw the leaves
     var leaves_radius = 2;
-    let leaves1_transform = model_transform;
-    leaves1_transform = leaves1_transform
+    let leaves_transform = Mat4.identity();
+    leaves_transform = leaves_transform
       .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(7, 2.1, 10));
+      .times(Mat4.translation(x / 2, y + 1.2, z / 2));
+
+    let leaves1_transform = leaves_transform.times(Mat4.translation(0, 0.6, 0));
+    let leaves2_transform = leaves_transform.times(Mat4.translation(-1, 0, 0));
+    let leaves3_transform = leaves_transform.times(Mat4.translation(1, 0, 0));
+    let leaves4_transform = leaves_transform.times(Mat4.translation(0, 0, -1));
+
     this.shapes.leaves.draw(
       context,
       program_state,
       leaves1_transform,
       this.materials.leaves
     );
-
-    let leaves1a_transform = model_transform;
-    leaves1a_transform = leaves1a_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(6, 1.5, 10));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves1a_transform,
-      this.materials.leaves
-    );
-
-    let leaves1b_transform = model_transform;
-    leaves1b_transform = leaves1b_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(8, 1.5, 10));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves1b_transform,
-      this.materials.leaves
-    );
-
-    let leaves1c_transform = model_transform;
-    leaves1c_transform = leaves1c_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(7, 1.5, 9));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves1c_transform,
-      this.materials.leaves
-    );
-
-    let leaves2_transform = model_transform;
-    leaves2_transform = leaves2_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-6.5, 2.1, 7.5));
     this.shapes.leaves.draw(
       context,
       program_state,
       leaves2_transform,
       this.materials.leaves
     );
-
-    let leaves2a_transform = model_transform;
-    leaves2a_transform = leaves2a_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-7.5, 1, 5, 7.5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves2a_transform,
-      this.materials.leaves
-    );
-
-    let leaves2b_transform = model_transform;
-    leaves2b_transform = leaves2b_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-5.5, 1.5, 7.5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves2b_transform,
-      this.materials.leaves
-    );
-
-    let leaves2c_transform = model_transform;
-    leaves2c_transform = leaves2c_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-6.5, 1.5, 6.5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves2c_transform,
-      this.materials.leaves
-    );
-
-    let leaves3_transform = model_transform;
-    leaves3_transform = leaves3_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(7.5, 2.1, 5));
     this.shapes.leaves.draw(
       context,
       program_state,
       leaves3_transform,
       this.materials.leaves
     );
-
-    let leaves3a_transform = model_transform;
-    leaves3a_transform = leaves3a_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(6.5, 1.5, 5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves3a_transform,
-      this.materials.leaves
-    );
-
-    let leaves3b_transform = model_transform;
-    leaves3b_transform = leaves3b_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(8.5, 1.5, 5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves3b_transform,
-      this.materials.leaves
-    );
-
-    let leaves3c_transform = model_transform;
-    leaves3c_transform = leaves3c_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(7.5, 1.5, 4));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves3c_transform,
-      this.materials.leaves
-    );
-
-    let leaves4_transform = model_transform;
-    leaves4_transform = leaves4_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-7.5, 2.1, 4));
     this.shapes.leaves.draw(
       context,
       program_state,
       leaves4_transform,
       this.materials.leaves
     );
-
-    let leaves4a_transform = model_transform;
-    leaves4a_transform = leaves4a_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-6.5, 1.5, 4));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves4a_transform,
-      this.materials.leaves
-    );
-
-    let leaves4b_transform = model_transform;
-    leaves4b_transform = leaves4b_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-8.5, 1.5, 4));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves4b_transform,
-      this.materials.leaves
-    );
-
-    let leaves4c_transform = model_transform;
-    leaves4c_transform = leaves4c_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-7.5, 1.5, 3));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves4c_transform,
-      this.materials.leaves
-    );
-
-    let leaves5_transform = model_transform;
-    leaves5_transform = leaves5_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-12.5, 2.1, 11));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves5_transform,
-      this.materials.leaves
-    );
-
-    let leaves5a_transform = model_transform;
-    leaves5a_transform = leaves5a_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-13.5, 1.5, 11));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves5a_transform,
-      this.materials.leaves
-    );
-
-    let leaves5b_transform = model_transform;
-    leaves5b_transform = leaves5b_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-11.5, 1.5, 11));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves5b_transform,
-      this.materials.leaves
-    );
-
-    let leaves5c_transform = model_transform;
-    leaves5c_transform = leaves5c_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-12.5, 1.5, 10));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves5c_transform,
-      this.materials.leaves
-    );
-
-    let leaves6_transform = model_transform;
-    leaves6_transform = leaves6_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-5, 2.1, 15));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves6_transform,
-      this.materials.leaves
-    );
-
-    let leaves6a_transform = model_transform;
-    leaves6a_transform = leaves6a_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-4, 1.5, 15));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves6a_transform,
-      this.materials.leaves
-    );
-
-    let leaves6b_transform = model_transform;
-    leaves6b_transform = leaves6b_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-6, 1.5, 15));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves6b_transform,
-      this.materials.leaves
-    );
-
-    let leaves6c_transform = model_transform;
-    leaves6c_transform = leaves6c_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(-5, 1.5, 14));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves6c_transform,
-      this.materials.leaves
-    );
-
-    let leaves7_transform = model_transform;
-    leaves7_transform = leaves7_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(5, 2.1, 15));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves7_transform,
-      this.materials.leaves
-    );
-
-    let leaves7a_transform = model_transform;
-    leaves7a_transform = leaves7a_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(3, 1.5, 15));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves7a_transform,
-      this.materials.leaves
-    );
-
-    let leaves7b_transform = model_transform;
-    leaves7b_transform = leaves7b_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(4, 1.5, 15));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves7b_transform,
-      this.materials.leaves
-    );
-
-    let leaves7c_transform = model_transform;
-    leaves7c_transform = leaves7c_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(5, 1.5, 14));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves7c_transform,
-      this.materials.leaves
-    );
-
-    let leaves8_transform = model_transform;
-    leaves8_transform = leaves8_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(15, 2.1, 12.5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves8_transform,
-      this.materials.leaves
-    );
-
-    let leaves8a_transform = model_transform;
-    leaves8a_transform = leaves8a_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(14, 1.5, 12.5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves8a_transform,
-      this.materials.leaves
-    );
-
-    let leaves8b_transform = model_transform;
-    leaves8b_transform = leaves8b_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(16, 1.5, 12.5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves8b_transform,
-      this.materials.leaves
-    );
-
-    let leaves8c_transform = model_transform;
-    leaves8c_transform = leaves8c_transform
-      .times(Mat4.scale(leaves_radius, leaves_radius, leaves_radius))
-      .times(Mat4.translation(15, 2.1, 11.5));
-    this.shapes.leaves.draw(
-      context,
-      program_state,
-      leaves8c_transform,
-      this.materials.leaves
-    );
   }
 
-  draw_trees(context, program_state, model_transform) {
-    let tree1_transform = model_transform;
-    tree1_transform = tree1_transform
-      .times(Mat4.scale(1, -4.5, 1))
-      .times(Mat4.translation(14, 0.3, 20));
-    this.shapes.tree.draw(
-      context,
-      program_state,
-      tree1_transform,
-      this.materials.wood
-    );
+  setup_trees(context, program_state) {
+    this.draw_tree(context, program_state, 14, 0.3, 20);
+    this.draw_tree(context, program_state, -13, 0.3, 15);
+    this.draw_tree(context, program_state, 15, 0.3, 10);
+    this.draw_tree(context, program_state, -15, 0.3, 8);
+    this.draw_tree(context, program_state, -25, 0.3, 22);
+    this.draw_tree(context, program_state, -10, 0.3, 30);
+    this.draw_tree(context, program_state, 10, 0.3, 30);
+    this.draw_tree(context, program_state, 30, 0.3, 25);
+  }
 
-    let tree2_transform = model_transform;
-    tree2_transform = tree2_transform
-      .times(Mat4.scale(1, -4.5, 1))
-      .times(Mat4.translation(-13, 0.3, 15));
-    this.shapes.tree.draw(
-      context,
-      program_state,
-      tree2_transform,
-      this.materials.wood
-    );
+  pick_score(context, program_state, model_transform) {
+    let score_transform = model_transform;
+    score_transform = score_transform
+      .times(Mat4.translation(2.25, -1, 2))
+      .times(Mat4.scale(0.5, 0.5, 0.5))
+      .times(Mat4.rotation(Math.PI, 0, 1, 0));
 
-    let tree3_transform = model_transform;
-    tree3_transform = tree3_transform
-      .times(Mat4.scale(1, -4.5, 1))
-      .times(Mat4.translation(15, 0.3, 10));
-    this.shapes.tree.draw(
-      context,
-      program_state,
-      tree3_transform,
-      this.materials.wood
-    );
+    switch (this.score) {
+      case 0:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_0
+        );
 
-    let tree4_transform = model_transform;
-    tree4_transform = tree4_transform
-      .times(Mat4.scale(1, -4.5, 1))
-      .times(Mat4.translation(-15, 0.3, 8));
-    this.shapes.tree.draw(
-      context,
-      program_state,
-      tree4_transform,
-      this.materials.wood
-    );
+      case 1:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_1
+        );
 
-    let tree5_transform = model_transform;
-    tree5_transform = tree5_transform
-      .times(Mat4.scale(1, -4.5, 1))
-      .times(Mat4.translation(-25, 0.3, 22));
-    this.shapes.tree.draw(
-      context,
-      program_state,
-      tree5_transform,
-      this.materials.wood
-    );
+      case 2:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_2
+        );
 
-    let tree6_transform = model_transform;
-    tree6_transform = tree6_transform
-      .times(Mat4.scale(1, -4.5, 1))
-      .times(Mat4.translation(-10, 0, 30));
-    this.shapes.tree.draw(
-      context,
-      program_state,
-      tree6_transform,
-      this.materials.wood
-    );
+      case 3:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_3
+        );
 
-    let tree7_transform = model_transform;
-    tree7_transform = tree7_transform
-      .times(Mat4.scale(1, -4.5, 1))
-      .times(Mat4.translation(10, 0, 30));
-    this.shapes.tree.draw(
-      context,
-      program_state,
-      tree7_transform,
-      this.materials.wood
-    );
+      case 4:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_4
+        );
 
-    let tree8_transform = model_transform;
-    tree8_transform = tree8_transform
-      .times(Mat4.scale(1, -4.5, 1))
-      .times(Mat4.translation(30, 0, 25));
-    this.shapes.tree.draw(
-      context,
-      program_state,
-      tree8_transform,
-      this.materials.wood
-    );
+      case 5:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_5
+        );
+
+      case 6:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_6
+        );
+
+      case 7:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_7
+        );
+
+      case 8:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_8
+        );
+
+      case 9:
+        this.shapes.score.draw(
+          context,
+          program_state,
+          score_transform,
+          this.materials.score_9
+        );
+
+      default:
+        break;
+    }
+
+    if (this.score >= 10) {
+      this.score = 0;
+    }
+  }
+
+  arrow_land(x, y, z) {
+    // arrow hits the grass
+    return y <= -5;
+  }
+
+  arrow_collide(x, y, z) {
+    // arrow hits the target
+    let z_dist = z - (this.targetPosition[2] - 0.75);
+    if (z_dist >= 0 && z_dist <= 2) {
+      let x_dist = (x - this.targetPosition[0]) ** 2;
+      let y_dist = (y - this.targetPosition[1]) ** 2;
+      let distance = Math.sqrt(x_dist + y_dist);
+      if (distance <= 4) {
+        return true;
+      }
+    }
+    return false;
   }
 
   display(context, program_state) {
-    if (!context.scratchpad.controls) {
-      this.children.push(
-        (context.scratchpad.controls = new defs.Movement_Controls())
+    if (this.startgame) {
+      if (!context.scratchpad.controls) {
+        this.children.push(
+          (context.scratchpad.controls = new defs.Movement_Controls())
+        );
+        program_state.set_camera(this.initial_camera_location);
+      }
+
+      const t = program_state.animation_time / 1000,
+        dt = program_state.animation_delta_time / 1000;
+      let model_transform = Mat4.identity();
+
+      let sun_transform = model_transform;
+      var sun_radius = 5; //altered the sun radius because the more objects the more shadows, was looking a little dull
+      sun_transform = sun_transform
+        .times(Mat4.scale(sun_radius, sun_radius, sun_radius))
+        .times(Mat4.translation(-10, 5, 8));
+
+      const light_position = vec4(0, 10, 0, 1);
+      program_state.lights = [
+        new Light(light_position, color(1, 1, 1, 1), 10 ** sun_radius),
+      ];
+
+      //Draw Title
+      /*if (!this.startgame) {    tried to implement a title screen but not working lol. Already made it a material and added the png. best of luck Jon
+        let title_transform = model_transform;
+        title_transform = title_transform.times(Mat4.translation(0, 0, 0));
+        this.shapes.cube.draw(
+          context,
+          program_state,
+          plane_transform,
+          this.materials.title
+        );
+      }
+      */
+
+      // Draw Sun
+      this.shapes.sun.draw(
+        context,
+        program_state,
+        sun_transform,
+        this.materials.sun
       );
-      program_state.set_camera(this.initial_camera_location);
-    }
 
-    const t = program_state.animation_time / 1000,
-      dt = program_state.animation_delta_time / 1000;
-    let model_transform = Mat4.identity();
+      // Draw Grass Plane
+      let plane_transform = model_transform;
+      plane_transform = plane_transform
+        .times(Mat4.translation(0, -5, 20))
+        .times(Mat4.scale(80, 1, 40))
+        .times(Mat4.rotation(90, 1, 0, 0));
+      this.shapes.plane.draw(
+        context,
+        program_state,
+        plane_transform,
+        this.materials.grass
+      );
 
-    let sun_transform = model_transform;
-    var sun_radius = 5; //altered the sun radius because the more objects the more shadows, was looking a little dull
-    sun_transform = sun_transform
-      .times(Mat4.scale(sun_radius, sun_radius, sun_radius))
-      .times(Mat4.translation(-10, 5, 8));
+      // Draw Sky background
+      let background_transform = model_transform;
+      background_transform = background_transform.times(
+        Mat4.scale(100, 100, 100)
+      );
+      this.shapes.background.draw(
+        context,
+        program_state,
+        background_transform,
+        this.materials.sky
+      );
 
-    const light_position = vec4(0, 10, 0, 1);
-    program_state.lights = [
-      new Light(light_position, color(1, 1, 1, 1), 10 ** sun_radius),
-    ];
+      // Draw Target
+      this.draw_target(context, program_state, model_transform);
 
-    //Draw Sun
-    this.shapes.sun.draw(
-      context,
-      program_state,
-      sun_transform,
-      this.materials.sun
-    );
+      //Draw Score
+      this.pick_score(context, program_state, model_transform);
 
-    //Draw Grass Plane
-    let plane_transform = model_transform;
-    plane_transform = plane_transform
-      .times(Mat4.translation(0, -5, 20))
-      .times(Mat4.scale(80, 1, 40))
-      .times(Mat4.rotation(90, 1, 0, 0));
-    this.shapes.plane.draw(
-      context,
-      program_state,
-      plane_transform,
-      this.materials.grass
-    );
+      // Draw Player Head (can remove if you want)
+      let player_transform = model_transform;
+      player_transform = player_transform
+        .times(Mat4.translation(1.5, -1.5, 4))
+        .times(Mat4.scale(0.75, 0.75, 0.75));
+      this.shapes.player.draw(
+        context,
+        program_state,
+        player_transform,
+        this.materials.player
+      );
 
-    //Draw Sky background
-    let background_transform = model_transform;
-    background_transform = background_transform.times(
-      Mat4.scale(100, 100, 100)
-    );
-    this.shapes.background.draw(
-      context,
-      program_state,
-      background_transform,
-      this.materials.sky
-    );
+      //Draw Player Body
+      let body_transform = model_transform;
+      body_transform = body_transform
+        .times(Mat4.translation(1.5, -3.5, 4))
+        .times(Mat4.scale(0.75, 1.25, 0.75));
+      this.shapes.body.draw(
+        context,
+        program_state,
+        body_transform,
+        this.materials.player
+      );
 
-    //Draw Target
-    this.draw_target(context, program_state, model_transform);
+      // Draw Trees in Background
+      this.setup_trees(context, program_state);
 
-    //Draw Player Head (can remove if you want)
-    let player_transform = model_transform;
-    player_transform = player_transform
-      .times(Mat4.translation(1.5, -1.5, 4))
-      .times(Mat4.scale(0.75, 0.75, 0.75));
-    this.shapes.player.draw(
-      context,
-      program_state,
-      player_transform,
-      this.materials.player
-    );
+      //Draw and animate arrow
+      var shaft_transform = model_transform;
+      //var tip_transform = model_transform;
 
-    //Draw Player Body
-    let body_transform = model_transform;
-    body_transform = body_transform
-      .times(Mat4.translation(1.5, -3.5, 4))
-      .times(Mat4.scale(0.75, 1.25, 0.75));
-    this.shapes.body.draw(
-      context,
-      program_state,
-      body_transform,
-      this.materials.player
-    );
+      if (this.launched) {
+        let x = this.arrow_init_x;
+        let y = this.arrow_init_y;
+        let z = this.arrow_init_z;
 
-    //Start of Drawing the Environment
-    //Draw Tree Trunks in Background
-    this.draw_trees(context, program_state, model_transform);
+        let delta = t - this.launchtime;
+        if (this.hit || this.miss) {
+          delta = this.hittime - this.launchtime;
+        }
 
-    //Draw Leaves
-    this.draw_leaves(context, program_state, model_transform);
+        y =
+          y +
+          this.velocity * Math.sin(this.theta) * delta +
+          0.5 * this.gravity * delta ** 2;
 
-    //Draw and animate arrow
-    var shaft_transform = model_transform;
-    //var tip_transform = model_transform;
+        if (this.hit) {
+          z = this.targetPosition[2] - 0.75;
+        } else {
+          z = z + this.velocity * Math.cos(this.theta) * delta;
+        }
 
-    if (this.launched) {
-      let x = this.arrow_init_x;
-      let y = this.arrow_init_y;
-      let z = this.arrow_init_z;
+        this.tangentAngle =
+          Math.atan2(this.arrow_init_z - z, this.arrow_init_y - y) +
+          Math.PI / 2;
 
-      let delta = t - this.launchtime;
+        shaft_transform = shaft_transform
+          .times(Mat4.translation(x, y, z))
+          .times(Mat4.rotation(this.tangentAngle, 1, 0, 0))
+          .times(
+            Mat4.scale(
+              this.arrow_scale_x,
+              this.arrow_scale_y,
+              this.arrow_scale_z
+            )
+          );
 
-      z = z + this.velocity * Math.cos(this.theta) * delta;
-      y =
-        y +
-        this.velocity * Math.sin(this.theta) * delta +
-        0.5 * this.gravity * delta ** 2;
-
-<<<<<<< HEAD
-      //this.tangentAngle = Math.atan()
-=======
-      this.tangentAngle = Math.atan();
->>>>>>> 5cf10e956a24a805f44d0cd0755131d0817ba88b
-
-      shaft_transform = shaft_transform
-        .times(Mat4.translation(x, y, z))
-        .times(Mat4.scale(0.125, 0.125, 1.25));
-    } else {
-      shaft_transform = shaft_transform
-        .times(
-          Mat4.translation(
-            this.arrow_init_x,
-            this.arrow_init_y,
-            this.arrow_init_z
+        if (this.arrow_collide(x, y, z) && !this.hit) {
+          this.hittime = t;
+          this.score++;
+          this.hit = true;
+        } else if (this.arrow_land(x, y, z) && !this.miss) {
+          this.hittime = t;
+          this.miss = true;
+        }
+      } else {
+        this.hit = false;
+        this.miss = false;
+        shaft_transform = shaft_transform
+          .times(
+            Mat4.translation(
+              this.arrow_init_x,
+              this.arrow_init_y,
+              this.arrow_init_z
+            )
           )
-        )
-        .times(Mat4.scale(0.125, 0.125, 1.25));
+          .times(Mat4.rotation(this.theta, -1, 0, 0))
+          .times(
+            Mat4.scale(
+              this.arrow_scale_x,
+              this.arrow_scale_y,
+              this.arrow_scale_z
+            )
+          );
 
-      this.launchtime = t;
+        this.launchtime = t;
+      }
+
+      this.shapes.shaft.draw(
+        context,
+        program_state,
+        shaft_transform,
+        this.materials.shaft
+      );
+      //this.shapes.arrow_tip.draw(context, program_state, shaft_transform, this.materials.tip);
+
+      let meter_transform = model_transform;
+      meter_transform = meter_transform
+        .times(Mat4.translation(7.5 - this.velocity / 20, 4, 5))
+        //.times(Mat4.rotation(90,0,0,0))
+        .times(Mat4.scale(this.velocity / 20, 0.5, 0.5));
+
+      this.shapes.meter.draw(
+        context,
+        program_state,
+        meter_transform,
+        this.materials.meter
+      );
+
+      program_state.projection_transform = Mat4.perspective(
+        Math.PI / 2,
+        context.width / context.height,
+        0.1,
+        500
+      );
+    } else {
+      if (!context.scratchpad.controls) {
+        this.children.push(
+          (context.scratchpad.controls = new defs.Movement_Controls())
+        );
+        program_state.set_camera(this.initial_camera_location);
+      }
+
+      const t = program_state.animation_time / 1000,
+        dt = program_state.animation_delta_time / 1000;
+      let model_transform = Mat4.identity();
+
+      let sun_transform = model_transform;
+      var sun_radius = 5; //altered the sun radius because the more objects the more shadows, was looking a little dull
+      sun_transform = sun_transform
+        .times(Mat4.scale(sun_radius, sun_radius, sun_radius))
+        .times(Mat4.translation(-10, 5, 8));
+
+      const light_position = vec4(0, 10, 0, 1);
+      program_state.lights = [
+        new Light(light_position, color(1, 1, 1, 1), 10 ** sun_radius),
+      ];
+
+      // Draw Sky background
+      let background_transform = model_transform;
+      background_transform = background_transform.times(
+        Mat4.scale(100, 100, 100)
+      );
+      this.shapes.background.draw(
+        context,
+        program_state,
+        background_transform,
+        this.materials.sky_white
+      );
     }
+  }
+}
 
-    this.shapes.shaft.draw(context, program_state, shaft_transform, this.materials.shaft);
-    //this.shapes.arrow_tip.draw(context, program_state, shaft_transform, this.materials.tip);
-
-    //Draw Axis
-    let axis_transform = model_transform;
-    axis_transform = axis_transform.times(Mat4.translation(-5, -2, 5));
-    this.shapes.axis.draw(
-      context,
-      program_state,
-      axis_transform,
-      this.materials.axis
-    );
-
-    program_state.projection_transform = Mat4.perspective(
-      Math.PI / 2,
-      context.width / context.height,
-      0.1,
-      500
+class Textured_Phong {
+  fragment_glsl_code() {
+    return (
+      this.shared_glsl_code() +
+      `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            
+            void main(){
+                // Sample the texture image in the correct place:
+                vec4 tex_color = texture2D( texture, f_tex_coord);
+                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `
     );
   }
 }
