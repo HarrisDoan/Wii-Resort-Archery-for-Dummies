@@ -199,7 +199,6 @@ export class Archery extends Scene {
         color: hex_color('#F0F0F0'),
         ambient: 1,
         diffusivity: 1,
-        //   texture: new Texture("assets/cloud.jpg"),     Messing with texturing the sky lol, can remove
       }),
 
       wood: new Material(new defs.Textured_Phong(), {
@@ -218,6 +217,14 @@ export class Archery extends Scene {
         texture: new Texture('assets/leaves.jpg'), // Tryna mess with leaves textures LOL, can remove
       }),
 
+      title_screen: new Material(new defs.Textured_Phong(), {
+          color: hex_color("#000000"),
+          ambient: 1, 
+          diffusivity: 0.1, 
+          specularity: 0.1,
+          texture: new Texture('assets/Title_Screen.png'),
+      }),
+      
       score_0: new Material(new defs.Textured_Phong(), {
         color: hex_color('#000000'),
         specularity: 0.1,
@@ -287,13 +294,6 @@ export class Archery extends Scene {
         ambient: 1,
         diffusivity: 0.5,
         texture: new Texture('assets/score_9.png'),
-      }),
-      title: new Material(new defs.Textured_Phong(), {
-        color: hex_color('#000000'),
-        specularity: 0.1,
-        ambient: 1,
-        diffusivity: 0.5,
-        texture: new Texture('assets/Title_Screen.png'),
       }),
     };
 
@@ -581,18 +581,18 @@ export class Archery extends Scene {
   }
 
   display(context, program_state) {
-    if (this.startgame) {
-      if (!context.scratchpad.controls) {
+    if (!context.scratchpad.controls) {
         this.children.push(
           (context.scratchpad.controls = new defs.Movement_Controls())
         );
         program_state.set_camera(this.initial_camera_location);
       }
 
-      const t = program_state.animation_time / 1000,
-        dt = program_state.animation_delta_time / 1000;
-      let model_transform = Mat4.identity();
-
+    const t = program_state.animation_time / 1000,
+      dt = program_state.animation_delta_time / 1000;
+    let model_transform = Mat4.identity();
+    
+    if (this.startgame) {
       let sun_transform = model_transform;
       var sun_radius = 5; //altered the sun radius because the more objects the more shadows, was looking a little dull
       sun_transform = sun_transform
@@ -603,19 +603,6 @@ export class Archery extends Scene {
       program_state.lights = [
         new Light(light_position, color(1, 1, 1, 1), 10 ** sun_radius),
       ];
-
-      //Draw Title
-      /*if (!this.startgame) {    tried to implement a title screen but not working lol. Already made it a material and added the png. best of luck Jon
-        let title_transform = model_transform;
-        title_transform = title_transform.times(Mat4.translation(0, 0, 0));
-        this.shapes.cube.draw(
-          context,
-          program_state,
-          plane_transform,
-          this.materials.title
-        );
-      }
-      */
 
       // Draw Sun
       this.shapes.sun.draw(
@@ -781,24 +768,11 @@ export class Archery extends Scene {
         0.1,
         500
       );
-    } else {
-      if (!context.scratchpad.controls) {
-        this.children.push(
-          (context.scratchpad.controls = new defs.Movement_Controls())
-        );
-        program_state.set_camera(this.initial_camera_location);
-      }
+    }
 
-      const t = program_state.animation_time / 1000,
-        dt = program_state.animation_delta_time / 1000;
-      let model_transform = Mat4.identity();
-
-      let sun_transform = model_transform;
-      var sun_radius = 5; //altered the sun radius because the more objects the more shadows, was looking a little dull
-      sun_transform = sun_transform
-        .times(Mat4.scale(sun_radius, sun_radius, sun_radius))
-        .times(Mat4.translation(-10, 5, 8));
-
+    // title screen
+    else {
+      var sun_radius = 5;
       const light_position = vec4(0, 10, 0, 1);
       program_state.lights = [
         new Light(light_position, color(1, 1, 1, 1), 10 ** sun_radius),
@@ -814,6 +788,23 @@ export class Archery extends Scene {
         program_state,
         background_transform,
         this.materials.sky_white
+      );
+
+      let title_transform = model_transform
+        .times(Mat4.translation(0, 0, 1.6))
+        .times(Mat4.scale(1.1, 1, 1));
+      this.shapes.cube.draw(
+        context,
+        program_state,
+        title_transform,
+        this.materials.title_screen
+      );
+
+      program_state.projection_transform = Mat4.perspective(
+        Math.PI / 2,
+        context.width / context.height,
+        0.1,
+        500
       );
     }
   }
